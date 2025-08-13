@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .active {
+    @apply text-primary;
+  }
+}
+
+body{
+  background-color: black;
+  color: white;
+}
+
+@keyframes text {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes textReverse {
+  0% {
+    background-position: 100% 50%;
+  }
+  50% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-text {
+  animation: text 8s ease infinite;
+  background-size: 200% auto;
+}
+
+.animate-textReverse {
+  animation: textReverse 8s ease infinite;
+  background-size: 200% auto;
+}
+
+.floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  animation: float-orb 8s ease-in-out infinite;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translate(30px, -30px) rotate(90deg); }
+  50% { transform: translate(-20px, 20px) rotate(180deg); }
+  75% { transform: translate(-30px, -10px) rotate(270deg); }
+}
+
+.particle-container {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  overflow: hidden; pointer-events: none; z-index: -10;
+}
+
+.particle {
+  position: absolute;
+  width: 4px; height: 4px;
+  background: radial-gradient(circle, #667eea, transparent);
+  border-radius: 50%;
+  animation: particle-float 6s linear infinite;
+}
+
+@keyframes particle-float {
+  0% { transform: translateY(100vh) scale(0); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(-10vh) scale(1); opacity: 0; }
+}
+
+.typing-text {
+  display: inline-block;
+  border-right: 2px solid #667eea;
+  white-space: nowrap;
+  overflow: hidden;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%, 50% { border-color: transparent; }
+  51%, 100% { border-color: #667eea; }
+}

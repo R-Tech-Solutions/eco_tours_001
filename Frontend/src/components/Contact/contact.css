@@ -1,0 +1,49 @@
+/* Social Icon Button Styles */
+.social-icon-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: box-shadow 0.2s;
+  cursor: pointer;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+}
+
+.social-icon-btn__back {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  z-index: 1;
+  background: linear-gradient(135deg, #38bdf8 0%, #6366f1 100%);
+  opacity: 0.15;
+  transition: opacity 0.2s;
+}
+
+.social-icon-btn__front {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.social-icon-btn__icon {
+  font-size: 1.5rem;
+  color: #0ea5e9;
+  transition: color 0.2s;
+}
+
+.social-icon-btn:hover .social-icon-btn__back {
+  opacity: 0.3;
+}
+
+.social-icon-btn:hover .social-icon-btn__icon {
+  color: #6366f1;
+} 
