@@ -19,18 +19,11 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-)*m7l1t+ix&law8e5#f-e!iv%jcc+-+do6!n4l*7bo=ps9z72+'
 
-# SECURITY WARNING: don't run with debug turned on in production!
- 
 DEBUG = True
 # ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'citytourslanka.com,admin.citytourslanka.com').split(',')
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'citytourslanka.com,admin.citytourslanka.com,127.0.0.1,localhost').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'echotourslanka.lk,admin.echotourslanka.lk').split(',')
 
 # Application definition
 
@@ -80,45 +73,19 @@ WSGI_APPLICATION = 'travelFinalApi.wsgi.application'
 
 
 # Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+# https://docs.djangoproject.com/en/5.2/ref/settings/  #databases
 
 # Database Configuration
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'postgres',
-#         'USER': 'postgres',  
-#         'PASSWORD': 'HY2TsOozWipIXMGMD0XL',
-#         'HOST': 'travel-site.csj8qkgam2pb.us-east-1.rds.amazonaws.com',
-#         'PORT': '5432',
-#     }
-# }
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'travel_data',
-        'USER': 'postgres',
-        'PASSWORD': '12345678',
-        'HOST': 'localhost',
+        'NAME': 'eco_tours_db',
+        'USER': 'postgres',  
+        'PASSWORD': 'lyc5443KEcoTours54FRQ31',
+        'HOST': 'eco-tours.csj8qkgam2pb.us-east-1.rds.amazonaws.com',
         'PORT': '5432',
     }
 }
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'travel_data',
-#         'USER': 'postgres',
-#         'PASSWORD': '12345678',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-#     }
-# }
-
-
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -162,16 +129,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
-    # "https://admin.citytourslanka.com",
-    # "https://citytourslanka.com",
-
-    "http://localhost:5173",    # Frontend (Vite/React default)
-    "http://127.0.0.1:5173",    # Alternative frontend URL
-    "http://localhost:8000",    # Backend (if accessed via browser)
-    "http://127.0.0.1:8000",    # Alternative backend URL
-
+    "https://admin.echotourslanka.lk",
+    "https://echotourslanka.lk",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -197,8 +158,8 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50 MB
-FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024  # 50 MB
+DATA_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 50 MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 100 * 1024 * 1024  # 50 MB
 
 # Image quality settings to prevent compression
 IMAGE_QUALITY = 95  # High quality for JPEG images
