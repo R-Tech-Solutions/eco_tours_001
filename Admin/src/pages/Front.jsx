@@ -308,63 +308,55 @@ const Front = () => {
 
   return (
     <div className="front-container">
-      {/* Logo Section - Dynamic from backend, fallback if error */}
-      <div className="logo-section">
+      {/* Professional Header */}
+      <header className="front-header">
         <div className="logo">
-          <img src={companyLogo} alt="Eco Travels Logo" className="logo-image" onError={e => { e.target.onerror = null; e.target.src = "/travel-logo.png"; }} />
-          <h1 className="logo-text">Eco Travels</h1>
+          <img src={companyLogo} alt="Company Logo" className="logo-image" onError={e => { e.target.onerror = null; e.target.src = "/travel-logo.png"; }} />
+          <span className="logo-text">Eco Travels</span>
         </div>
         <div className="logo-info">
-          <p>🏢 Company Logo {error ? '(Fallback)' : '(Dynamic)'}</p>
-          <p style={{ fontSize: '0.9em', color: '#666', marginTop: 5 }}>
-            Company logo is managed separately below ↓
-          </p>
+          <span className="logo-desc">Company logo is managed below.</span>
         </div>
         {error && (
           <div className="error-message">
-            <p style={{ color: 'red', fontWeight: 'bold' }}>⚠️ {error} (Logo fallback in use)</p>
+            <p style={{ color: 'red', fontWeight: 'bold' }}>{error} (Logo fallback in use)</p>
           </div>
         )}
-      </div>
+      </header>
 
-      {/* Content Counter */}
-      <div className="content-counter">
+      {/* Dashboard */}
+      <section className="content-counter">
         <div className="counter-card">
-          <h3>📊 Content Management Dashboard</h3>
+          <h2>Content Management Dashboard</h2>
           <div className="counter-stats">
             <div className="stat-item">
               <span className="stat-number">{savedData.length}</span>
               <span className="stat-label">Total Content Items</span>
             </div>
-            <div className="stat-item">
-              <span className="stat-number">{isEditing ? 'Editing' : 'Ready'}</span>
-              <span className="stat-label">Form Status</span>
-            </div>
-            <div className="stat-item">
-              <span className="stat-number">{loading ? 'Loading...' : 'Connected'}</span>
-              <span className="stat-label">API Status</span>
-            </div>
           </div>
           {error && (
             <div className="error-message">
-              <p>⚠️ {error}</p>
+              <p>{error}</p>
             </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Content Management Section */}
-      <div className="form-section">
+      {/* Content Form */}
+      <section className="form-section">
         <div className="form-card">
           <div className="form-header">
-            <h2>{isEditing ? 'Edit Content' : 'Add New Content'}</h2>
-            <p>{isEditing ? 'Update the content below' : 'Add multiple content items - each with its own image, heading, subheading, and paragraph. Company logo is managed separately below.'}</p>
+            <h3>{isEditing ? 'Edit Content' : 'Add New Content'}</h3>
+            <p>
+              {isEditing
+                ? 'Update the content below.'
+                : 'Add content items with an image, heading, subheading, and paragraph. Company logo is managed separately below.'}
+            </p>
           </div>
-
           <form onSubmit={handleSubmit} className="content-form">
             {/* Image Upload */}
             <div className="form-group">
-              <label htmlFor="logo_image" className="form-label">📷 Upload Content Image</label>
+              <label htmlFor="logo_image" className="form-label">Content Image</label>
               <div className="image-upload-container">
                 <input
                   type="file"
@@ -382,19 +374,17 @@ const Front = () => {
                     </div>
                   ) : (
                     <div className="upload-placeholder">
-                      <div className="upload-icon">📷</div>
+                      <div className="upload-icon"></div>
                       <p>Click to select an image</p>
                       <span>or drag and drop</span>
                     </div>
                   )}
                 </label>
               </div>
-              
-              {/* Debug info for logo_image */}
               {formData.logo_image && (
                 <div style={{ marginTop: 10, padding: 10, backgroundColor: '#e8f5e8', borderRadius: 4, border: '1px solid #28a745' }}>
                   <p style={{ margin: 0, fontSize: '0.9em', color: '#155724' }}>
-                    <strong>✅ Image selected:</strong> {formData.logo_image.name} ({formData.logo_image.size} bytes)
+                    <strong>Image selected:</strong> {formData.logo_image.name} ({formData.logo_image.size} bytes)
                   </p>
                 </div>
               )}
@@ -402,28 +392,28 @@ const Front = () => {
 
             {/* Logo Text Input */}
             <div className="form-group">
-              <label htmlFor="logo_text" className="form-label">🏷️ Logo Text</label>
+              <label htmlFor="logo_text" className="form-label">Logo Text</label>
               <input
                 type="text"
                 id="logo_text"
                 name="logo_text"
                 value={formData.logo_text}
                 onChange={handleInputChange}
-                placeholder="Enter logo text here..."
+                placeholder="Enter logo text"
                 className="form-input"
               />
             </div>
 
             {/* Heading Input */}
             <div className="form-group">
-              <label htmlFor="heading" className="form-label">📝 Heading</label>
+              <label htmlFor="heading" className="form-label">Heading</label>
               <input
                 type="text"
                 id="heading"
                 name="heading"
                 value={formData.heading}
                 onChange={handleInputChange}
-                placeholder="Enter your heading here..."
+                placeholder="Enter heading"
                 className="form-input"
                 required
               />
@@ -431,14 +421,14 @@ const Front = () => {
 
             {/* Subheading Input */}
             <div className="form-group">
-              <label htmlFor="subheading" className="form-label">📋 Subheading</label>
+              <label htmlFor="subheading" className="form-label">Subheading</label>
               <input
                 type="text"
                 id="subheading"
                 name="subheading"
                 value={formData.subheading}
                 onChange={handleInputChange}
-                placeholder="Enter your subheading here..."
+                placeholder="Enter subheading"
                 className="form-input"
                 required
               />
@@ -446,13 +436,13 @@ const Front = () => {
 
             {/* Paragraph Input */}
             <div className="form-group">
-              <label htmlFor="paragraph" className="form-label">📄 Paragraph</label>
+              <label htmlFor="paragraph" className="form-label">Paragraph</label>
               <textarea
                 id="paragraph"
                 name="paragraph"
                 value={formData.paragraph}
                 onChange={handleInputChange}
-                placeholder="Enter your paragraph content here..."
+                placeholder="Enter paragraph content"
                 className="form-textarea"
                 rows="6"
                 required
@@ -466,7 +456,7 @@ const Front = () => {
                 className="submit-btn"
                 disabled={loading}
               >
-                {loading ? '⏳ Processing...' : (isEditing ? '🔄 Update Content' : '➕ Add New Content')}
+                {loading ? 'Processing...' : (isEditing ? 'Update Content' : 'Add Content')}
               </button>
               <button 
                 type="button" 
@@ -474,25 +464,24 @@ const Front = () => {
                 className="reset-btn"
                 disabled={loading}
               >
-                {isEditing ? '❌ Cancel Edit' : '🔄 Reset Form'}
+                {isEditing ? 'Cancel Edit' : 'Reset Form'}
               </button>
             </div>
           </form>
         </div>
-      </div>
+      </section>
 
-      {/* Separate Company Logo Section */}
-      <div className="form-section" style={{ marginTop: 30 }}>
+      {/* Company Logo Section */}
+      <section className="form-section" style={{ marginTop: 30 }}>
         <div className="form-card">
           <div className="form-header">
-            <h2>🏢 Company Logo Management</h2>
-            <p>Upload and manage your company logo separately from content</p>
+            <h3>Company Logo Management</h3>
+            <p>Upload and manage your company logo separately from content.</p>
           </div>
-
           <div className="company-logo-section">
             {/* Current Company Logo Display */}
             <div className="current-logo-display">
-              <h3>Current Company Logo</h3>
+              <h4>Current Company Logo</h4>
               {companyLogo && companyLogo !== "/travel-logo.png" ? (
                 <div className="logo-preview-container">
                   <img 
@@ -506,16 +495,13 @@ const Front = () => {
                 </div>
               ) : (
                 <div className="no-logo">
-                  <p>No company logo set yet</p>
+                  <p>No company logo set yet.</p>
                 </div>
               )}
             </div>
-
-            
-
             {/* Company Logo Upload */}
             <div className="logo-upload-section">
-              <h3>Upload New Company Logo</h3>
+              <h4>Upload New Company Logo</h4>
               <div className="image-upload-container">
                 <input
                   type="file"
@@ -533,46 +519,20 @@ const Front = () => {
                     </div>
                   ) : (
                     <div className="upload-placeholder">
-                      <div className="upload-icon">🏢</div>
+                      <div className="upload-icon"></div>
                       <p>Click to select a company logo</p>
                       <span>or drag and drop</span>
                     </div>
                   )}
                 </label>
               </div>
-
-              {/* Debug info */}
               {formData.company_logo && (
                 <div style={{ marginTop: 15, padding: 15, backgroundColor: '#f8f9fa', borderRadius: 8, border: '1px solid #dee2e6' }}>
-                  <h4 style={{ margin: '0 0 10px 0', color: '#495057' }}>Selected File Details:</h4>
+                  <h5 style={{ margin: '0 0 10px 0', color: '#495057' }}>Selected File Details:</h5>
                   <p><strong>File name:</strong> {formData.company_logo.name}</p>
                   <p><strong>File size:</strong> {formData.company_logo.size} bytes</p>
                   <p><strong>File type:</strong> {formData.company_logo.type}</p>
-                  
                   <div style={{ marginTop: 15 }}>
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        console.log('=== FILE SELECTION TEST ===');
-                        console.log('formData.company_logo:', formData.company_logo);
-                        console.log('formData.company_logo.name:', formData.company_logo?.name);
-                        console.log('formData.company_logo.size:', formData.company_logo?.size);
-                        console.log('formData.company_logo.type:', formData.company_logo?.type);
-                        alert('Check console for file details');
-                      }}
-                      style={{ 
-                        padding: '8px 16px', 
-                        backgroundColor: '#17a2b8', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: 4,
-                        cursor: 'pointer',
-                        marginRight: 10
-                      }}
-                    >
-                      🔍 Test File Selection
-                    </button>
-                    
                     <button 
                       type="button" 
                       onClick={handleCompanyLogoUpload}
@@ -587,25 +547,7 @@ const Front = () => {
                       }}
                       disabled={loading}
                     >
-                      {loading ? '⏳ Uploading...' : '💾 Save Company Logo'}
-                    </button>
-                    
-                    <button 
-                      type="button" 
-                      onClick={() => {
-                        setFormData(prev => ({ ...prev, company_logo: null }));
-                        setCompanyLogoPreview(null);
-                      }}
-                      style={{ 
-                        padding: '10px 20px', 
-                        backgroundColor: '#6c757d', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: 6,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      ❌ Clear Selection
+                      {loading ? 'Uploading...' : 'Save Company Logo'}
                     </button>
                   </div>
                 </div>
@@ -613,13 +555,13 @@ const Front = () => {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Table Display Section */}
       {savedData.length > 0 && (
-        <div className="table-section">
+        <section className="table-section">
           <div className="table-card">
-            <h3>📋 Content Management Table ({savedData.length} items)</h3>
+            <h3>Content Management Table ({savedData.length} items)</h3>
             <div className="table-container">
               <table className="content-table">
                 <thead>
@@ -661,7 +603,7 @@ const Front = () => {
                             title="Edit"
                             disabled={loading}
                           >
-                            ✏️
+                            Edit
                           </button>
                           <button 
                             onClick={() => handleDelete(item.id)} 
@@ -669,7 +611,7 @@ const Front = () => {
                             title="Delete"
                             disabled={loading}
                           >
-                            🗑️
+                            Delete
                           </button>
                         </div>
                       </td>
@@ -679,14 +621,14 @@ const Front = () => {
               </table>
             </div>
           </div>
-        </div>
+        </section>
       )}
 
       {/* Loading State */}
       {loading && savedData.length === 0 && (
         <div className="loading-state">
           <div className="loading-card">
-            <h3>⏳ Loading...</h3>
+            <h3>Loading...</h3>
             <p>Please wait while we fetch your content data.</p>
           </div>
         </div>
@@ -696,22 +638,8 @@ const Front = () => {
       {!loading && savedData.length === 0 && (
         <div className="empty-state">
           <div className="empty-card">
-            <h3>🚀 Get Started</h3>
-            <p>No content added yet. Use the form above to add your first content item!</p>
-            <div className="empty-features">
-              <div className="feature">
-                <span>🏢</span>
-                <p>Company Logo (Separate Section)</p>
-              </div>
-              <div className="feature">
-                <span>📝</span>
-                <p>Multiple Content Items</p>
-              </div>
-              <div className="feature">
-                <span>🔄</span>
-                <p>Easy Management</p>
-              </div>
-            </div>
+            <h3>Welcome</h3>
+            <p>No content added yet. Use the form above to add your first content item.</p>
           </div>
         </div>
       )}

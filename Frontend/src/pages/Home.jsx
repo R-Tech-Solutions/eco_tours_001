@@ -288,21 +288,30 @@ const ImageSlider = () => {
 
       {/* Enhanced text content */}
       <div
-        className="absolute inset-x-0 top-1/2 -translate-y-1/2 text-white px-2 sm:px-6 z-20 flex flex-col items-start pl-4 sm:pl-8"
+        className="absolute inset-y-0 left-0 flex flex-col items-start justify-center pl-8 sm:pl-16 z-20"
         style={{
-          width: "100%",
-          maxWidth: "100vw",
+          width: "50%",
+          maxWidth: "60vw",
           pointerEvents: "auto",
         }}
       >
-        <h1 className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 text-white text-center break-words leading-tight w-full max-w-[95vw] perspective-1000">
-          {slides[currentIndex]?.title || "Welcome"}
+        <h1
+          className="text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-2 text-left break-words leading-tight w-full max-w-[95vw] perspective-1000"
+          style={{ fontFamily: "'Bebas Neue'", color: "#111827" }}
+        >
+          <AnimatedText text={slides[currentIndex]?.title || "Welcome"} />
         </h1>
-        <h2 className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 text-center break-words leading-tight w-full max-w-[95vw] cursor-pointer">
-          {slides[currentIndex]?.subtitle || "Adventure"}
+        <h2
+          className="text-lg xs:text-xl sm:text-2xl md:text-3xl lg:text-4xl mb-4 text-left break-words leading-tight w-full max-w-[95vw] cursor-pointer"
+          style={{ color: "#111827" }}
+        >
+          <AnimatedText text={slides[currentIndex]?.subtitle || "Adventure"} delay={300} />
         </h2>
-        <p className="text-sm xs:text-base sm:text-lg md:text-xl text-center break-words leading-snug w-full max-w-[95vw]">
-          {slides[currentIndex]?.description || "Discover amazing experiences with us."}
+        <p
+          className="text-base sm:text-lg md:text-2xl lg:text-3xl text-left break-words leading-snug w-full max-w-[95vw] font-bold"
+          style={{ textAlign: "justify", color: "#C0C0C0", fontFamily: "'Lobster', cursive" }}
+        >
+          <AnimatedText text={slides[currentIndex]?.description || "Discover amazing experiences with us."} delay={600} />
         </p>
       </div>
 
@@ -336,5 +345,27 @@ const ImageSlider = () => {
     </div>
   );
 };
+
+// Add this helper for animated text
+function AnimatedText({ text, className = "", delay = 0 }) {
+  const [displayed, setDisplayed] = React.useState("");
+  React.useEffect(() => {
+    setDisplayed("");
+    if (!text) return;
+    let i = 0;
+    const timeout = setTimeout(() => {
+      const interval = setInterval(() => {
+        setDisplayed((prev) => prev + text[i]);
+        i++;
+        if (i >= text.length) clearInterval(interval);
+      }, 18);
+    }, delay);
+    return () => {
+      clearTimeout(timeout);
+      setDisplayed("");
+    };
+  }, [text, delay]);
+  return <span className={className}>{displayed}</span>;
+}
 
 export default Home;

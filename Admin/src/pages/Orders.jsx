@@ -68,10 +68,17 @@ const Orders = () => {
   const handleView = async (booking) => {
     setSelectedBooking(booking);
     setIsModalOpen(true);
-    // If place is just an ID, fetch details
-    if (booking.place && typeof booking.place === "number") {
+    // Always fetch place details if main_image is missing
+    if (
+      booking.place &&
+      (
+        typeof booking.place === "number" ||
+        (typeof booking.place === "object" && !booking.place.main_image)
+      )
+    ) {
       try {
-        const res = await fetch(`${BackendUrl}/api/places/${booking.place}/`);
+        const placeId = typeof booking.place === "number" ? booking.place : booking.place.id;
+        const res = await fetch(`${BackendUrl}/api/places/${placeId}/`);
         if (res.ok) {
           const placeData = await res.json();
           setSelectedPlaceDetails(placeData);
@@ -261,9 +268,17 @@ const Orders = () => {
                 <div className="flex items-start space-x-4">
                   {selectedPlaceDetails?.main_image && (
                     <img
-                      src={`${BackendUrl}${selectedPlaceDetails.main_image}`}
+                      src={
+                        selectedPlaceDetails.main_image.startsWith("http")
+                          ? selectedPlaceDetails.main_image
+                          : `${BackendUrl}${selectedPlaceDetails.main_image}`
+                      }
                       alt={selectedPlaceDetails.title}
                       className="w-32 h-32 object-cover rounded-lg"
+                      onError={e => {
+                        e.target.onerror = null;
+                        e.target.src = "https://via.placeholder.com/128?text=No+Image";
+                      }}
                     />
                   )}
                   <div className="flex-1">

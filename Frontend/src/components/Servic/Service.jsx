@@ -396,11 +396,7 @@ export default function TravelService() {
                           </div>
 
                           {/* Glass Status Badge */}
-                          <div 
-                            className="absolute top-4 left-4 bg-gradient-to-r from-red-500/80 to-pink-500/80 backdrop-blur-xl border border-white/30 text-white px-3 py-1 rounded-full text-sm font-bold shadow-2xl"
-                          >
-                            🔥 HOT
-                          </div>
+
                         </div>
 
                         {/* Glass Content Section */}
@@ -469,11 +465,7 @@ export default function TravelService() {
                           </div>
 
                           {/* Glass Status Badge */}
-                          <div 
-                            className="absolute top-4 left-4 bg-gradient-to-r from-orange-500/80 to-red-500/80 backdrop-blur-xl border border-white/30 text-white px-3 py-1 rounded-full text-sm font-bold shadow-2xl"
-                          >
-                            ⭐ POPULAR
-                          </div>
+                          
                         </div>
 
                         {/* Glass Content Section */}
@@ -547,7 +539,6 @@ export default function TravelService() {
                             className="absolute top-4 left-4 bg-gradient-to-r from-purple-500/80 to-pink-500/80 backdrop-blur-xl border border-white/30 text-white px-3 py-1 rounded-full text-sm font-bold shadow-2xl"
                             whileHover={{ scale: 1.1 }}
                           >
-                            ✨ NEW
                           </motion.div>
                         </div>
 
@@ -617,11 +608,7 @@ export default function TravelService() {
                           </div>
 
                           {/* Glass Status Badge */}
-                          <div 
-                            className="absolute top-4 left-4 bg-gradient-to-r from-teal-500/80 to-blue-500/80 backdrop-blur-xl border border-white/30 text-white px-3 py-1 rounded-full text-sm font-bold shadow-2xl"
-                          >
-                            🌟 FEATURED
-                          </div>
+
                         </div>
 
                         {/* Glass Content Section */}
@@ -690,11 +677,7 @@ export default function TravelService() {
                           </div>
 
                           {/* Glass Status Badge */}
-                          <div 
-                            className="absolute top-4 left-4 bg-gradient-to-r from-yellow-500/80 to-orange-500/80 backdrop-blur-xl border border-white/30 text-white px-3 py-1 rounded-full text-sm font-bold shadow-2xl"
-                          >
-                            🎯 TOP PICK
-                          </div>
+                          
                         </div>
 
                         {/* Glass Content Section */}

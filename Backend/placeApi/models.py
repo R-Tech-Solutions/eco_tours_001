@@ -1,7 +1,15 @@
 from django.db import models
 from django.contrib.auth.models import User
 import os
+from django.core.exceptions import ValidationError
 
+
+def validate_image_size(image):
+    max_size_mb = 60
+    if image.size > max_size_mb * 1024 * 1024:
+        raise ValidationError(f"Image size cannot exceed {max_size_mb} MB")
+    
+    
 class Place(models.Model):
     place_type = [
         ('trending', 'Trending Places'),
@@ -14,17 +22,17 @@ class Place(models.Model):
 
     ]
     
-    title = models.CharField(max_length=50)
-    subtitle = models.CharField(max_length=200)
+    title = models.CharField(blank=True, default='')
+    subtitle = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     about_place = models.TextField()
-    tour_highlights = models.CharField(max_length=200)
-    include = models.CharField(max_length=200)
-    exclude = models.CharField(max_length=200)
-    price_title = models.CharField(max_length=100, null=False, blank=True, default="")
-    main_image = models.ImageField(upload_to='places/main_images/', null=True, blank=True, max_length=255)
+    tour_highlights = models.CharField(blank=True, default='')
+    include = models.CharField(blank=True, default='')
+    exclude = models.CharField(blank=True, default='')
+    price_title = models.CharField(blank=True, default='')
+    main_image = models.ImageField(upload_to='places/main_images/', null=True, blank=True, max_length=255, validators=[validate_image_size])
     place_type = models.CharField(max_length=50, choices=place_type, default='trending')
-    package_title = models.CharField(max_length=200, null=False, blank=True, default="")
+    package_title = models.CharField(blank=True, default='')
 
     def __str__(self):
         return self.title
@@ -38,7 +46,7 @@ class Place(models.Model):
 
 class PlaceImage(models.Model):
     place = models.ForeignKey(Place, related_name='sub_images', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='places/sub_images/', null=True, blank=True, max_length=255)
+    image = models.ImageField(upload_to='places/sub_images/', null=True, blank=True, max_length=255, validators=[validate_image_size])
 
     def delete(self, *args, **kwargs):
         if self.image and self.image.path and os.path.isfile(self.image.path):
@@ -59,7 +67,7 @@ class ItineraryDay(models.Model):
 
 class ItineraryPhoto(models.Model):
     itinerary_day = models.ForeignKey(ItineraryDay, related_name='photos', on_delete=models.CASCADE)
-    image = models.ImageField(upload_to='places/itinerary_photos/', null=True, blank=True, max_length=255)
+    image = models.ImageField(upload_to='places/itinerary_photos/', null=True, blank=True, max_length=255, validators=[validate_image_size])
 
     def delete(self, *args, **kwargs):
         if self.image and self.image.path and os.path.isfile(self.image.path):
@@ -71,7 +79,7 @@ class ItineraryPhoto(models.Model):
 
 class Booking(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    user_name = models.CharField(max_length=100)
+    user_name = models.CharField(blank=True, default='')
     email = models.EmailField()
     phone = models.CharField(max_length=20)
     place = models.ForeignKey(Place, on_delete=models.CASCADE, related_name='bookings')
@@ -102,7 +110,7 @@ class Booking(models.Model):
 class Item(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()
-    image = models.ImageField(upload_to='items/images/', null=True, blank=True, max_length=255)
+    image = models.ImageField(upload_to='items/images/', null=True, blank=True, max_length=255, validators=[validate_image_size])
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -111,25 +119,25 @@ class Item(models.Model):
         return self.title
 
 class Service(models.Model):
-    service_title = models.CharField(max_length=255)
+    service_title = models.CharField(blank=True, default='')
     service_description = models.TextField()
-    image_url = models.ImageField(upload_to='services/', null=True, blank=True)
+    image_url = models.ImageField(upload_to='services/', null=True, blank=True, max_length=255, validators=[validate_image_size])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return self.service_title
 
 class GalleryPhoto(models.Model):
-    image = models.ImageField(upload_to='gallery/photos/')
+    image = models.ImageField(upload_to='gallery/photos/', null=True, blank=True, max_length=255, validators=[validate_image_size])
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"Gallery Photo {self.id}"
     
 class Post(models.Model):
-    post_title = models.CharField(max_length=255)
+    post_title = models.CharField(blank=True, default='')
     post_content = models.TextField()
-    post_image = models.ImageField(upload_to='post_images/')
+    post_image = models.ImageField(upload_to='post_images/', null=True, blank=True, max_length=255, validators=[validate_image_size])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -147,10 +155,10 @@ class Contact(models.Model):
         return self.contact_number
 
 class Front(models.Model):
-    company_logo = models.ImageField(upload_to='front/company_logo/', null=True, blank=True, max_length=255)
-    logo_image = models.ImageField(upload_to='front/logo_images/', null=True, blank=True, max_length=255)
-    heading = models.CharField(max_length=255)
-    subheading = models.CharField(max_length=255)
+    company_logo = models.ImageField(upload_to='front/company_logo/', null=True, blank=True, max_length=255, validators=[validate_image_size])
+    logo_image = models.ImageField(upload_to='front/logo_images/', null=True, blank=True, max_length=255, validators=[validate_image_size])
+    heading = models.CharField(blank=True, default='')
+    subheading = models.CharField(blank=True, default='')
     paragraph = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

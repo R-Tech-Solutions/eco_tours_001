@@ -197,7 +197,11 @@ const PhotoUploader = ({
                 src={
                   photo instanceof File
                     ? URL.createObjectURL(photo)
-                    : "/placeholder.svg?height=48&width=48"
+                    : getImageUrl(
+                        (photo && photo.url) ||
+                          (photo && photo.image) ||
+                          photo
+                      )
                 }
                 alt={`Photo ${index + 1}`}
                 className="w-full h-full object-cover"
@@ -240,9 +244,7 @@ const getImageUrl = (file) => {
   if (!file) return "/placeholder.svg?height=200&width=300";
   if (file instanceof File) return URL.createObjectURL(file);
   if (file.url) {
-    // If url is already absolute, return as is
     if (file.url.startsWith("http")) return file.url;
-    // If url is a media path, prepend backend URL
     if (file.url.startsWith("/media/") || file.url.startsWith("media/")) {
       return `${BackendUrl}${file.url.startsWith("/") ? "" : "/"}${file.url}`;
     }
@@ -258,7 +260,141 @@ const getImageUrl = (file) => {
   return "/placeholder.svg?height=200&width=300";
 };
 
-// Move this OUTSIDE of the AddPlace function, or at least define it as a stable component
+// Itinerary Manager Component
+const ItineraryManager = ({
+  itinerary,
+  onAddDay,
+  onRemoveDay,
+  onChangeDayField,
+  onAddPhoto,
+  onRemovePhoto,
+  onPhotoChange,
+  onDeletePhoto,
+}) => (
+  <div>
+    {itinerary.map((day, idx) => (
+      <div key={idx} className="border rounded-md p-4 mb-4">
+        <div className="flex items-center mb-2">
+          <Label className="mr-2">Day</Label>
+          <Input
+            type="number"
+            min={1}
+            value={day.day}
+            onChange={(e) => onChangeDayField(idx, "day", e.target.value)}
+            className="w-20 mr-4"
+            placeholder="Day"
+          />
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onRemoveDay(idx)}
+            className="ml-2 text-red-500"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="mb-2 flex items-center">
+          <Label className="mr-2">Sub Iterative Description</Label>
+          <Input
+            type="text"
+            value={day.sub_iterative_description || ""}
+            onChange={(e) =>
+              onChangeDayField(idx, "sub_iterative_description", e.target.value)
+            }
+            className="flex-1"
+            placeholder="Sub Iterative Description"
+          />
+        </div>
+        <div className="mb-2">
+          <Label>Sub Description</Label>
+          <Textarea
+            value={day.sub_description}
+            onChange={(e) =>
+              onChangeDayField(idx, "sub_description", e.target.value)
+            }
+            rows={2}
+          />
+        </div>
+        <div>
+          <Label>Photos</Label>
+          <div>
+            {day.photos.map((photo, pIdx) => (
+              <div key={pIdx} className="flex items-center mb-2">
+                {photo && (
+                  <div className="w-12 h-12 mr-2 border rounded overflow-hidden">
+                    <img
+                      src={
+                        photo instanceof File
+                          ? URL.createObjectURL(photo)
+                          : getImageUrl(
+                              (photo && photo.url) ||
+                                (photo && photo.image) ||
+                                photo
+                            )
+                      }
+                      alt={`Itinerary Photo ${pIdx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+                <Input
+                  type="file"
+                  onChange={(e) =>
+                    e.target.files?.[0] &&
+                    onPhotoChange(idx, pIdx, e.target.files[0])
+                  }
+                  className="flex-1"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => {
+                    if (photo?.id) {
+                      onDeletePhoto(day.id, photo.id);
+                    } else {
+                      onRemovePhoto(idx, pIdx);
+                    }
+                  }}
+                  className="ml-2 text-red-500"
+                  disabled={day.photos.length <= 1}
+                  title={
+                    day.photos.length <= 1
+                      ? "At least one photo required"
+                      : "Remove"
+                  }
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onAddPhoto(idx)}
+              className="mt-2"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Photo
+            </Button>
+          </div>
+        </div>
+      </div>
+    ))}
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      onClick={onAddDay}
+      className="mt-2"
+    >
+      <Plus className="h-4 w-4 mr-2" />
+      Add Itinerary Day
+    </Button>
+  </div>
+);
+
+// AddModal Component
 function AddModal({
   show,
   newPlace,
@@ -286,10 +422,7 @@ function AddModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
         <h2 className="text-xl font-bold mb-4">Add New Place</h2>
-        {/* Do NOT wrap the modal content in a <form> tag, just use divs */}
-        {/* ...existing code for Add form fields, use newPlace state and handlers... */}
         <PlaceFormSection title="Basic Information">
-          {/* ...existing code... */}
           <div>
             <Label htmlFor="title">Place Name</Label>
             <Input
@@ -310,10 +443,9 @@ function AddModal({
           </div>
           <div>
             <Label htmlFor="place_type">Category</Label>
-            <p class="text-sm text-gray-600 italic">
+            <p className="text-sm text-gray-600 italic">
               Note: in the trending package, only 5 packages are allowed.
             </p>
-
             <Select
               name="place_type"
               value={newPlace.place_type}
@@ -327,8 +459,8 @@ function AddModal({
               <SelectItem value="seven_days">7 Days Package</SelectItem>
               <SelectItem value="eight_days">8 Days Package</SelectItem>
               <SelectItem value="ten_days">10 Days Package</SelectItem>
-              <SelectItem value="fourteen_days">14 Days Pakage</SelectItem>
-              <SelectItem value="eighteen_dyas">18 Days Pakage</SelectItem>
+              <SelectItem value="fourteen_days">14 Days Package</SelectItem>
+              <SelectItem value="eighteen_days">18 Days Package</SelectItem>
             </Select>
           </div>
           <div>
@@ -476,7 +608,7 @@ function AddModal({
   );
 }
 
-// Move EditModal OUTSIDE of AddPlace and make it a stable component
+// EditModal Component
 function EditModal({
   show,
   selectedPlace,
@@ -499,20 +631,6 @@ function EditModal({
   handleDeleteItineraryPhoto,
 }) {
   if (!show || !selectedPlace) return null;
-
-  // Convert itinerary_days to the format expected by the form
-  const itineraryData =
-    selectedPlace.itinerary_days?.map((day) => ({
-      id: day?.id || null,
-      day: day?.day || "",
-      sub_iterative_description: day?.sub_iterative_description || "",
-      sub_description: day?.sub_description || "",
-      photos:
-        day?.photos?.map((photo) => ({
-          id: photo?.id || null,
-          url: photo?.image || null,
-        })) || [],
-    })) || [];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
@@ -552,8 +670,8 @@ function EditModal({
               <SelectItem value="seven_days">7 Days Package</SelectItem>
               <SelectItem value="eight_days">8 Days Package</SelectItem>
               <SelectItem value="ten_days">10 Days Package</SelectItem>
-              <SelectItem value="fourteen_days">14 Days Pakage</SelectItem>
-              <SelectItem value="eighteen_dyas">18 Days Pakage</SelectItem>
+              <SelectItem value="fourteen_days">14 Days Package</SelectItem>
+              <SelectItem value="eighteen_days">18 Days Package</SelectItem>
             </Select>
           </div>
           <div>
@@ -667,7 +785,7 @@ function EditModal({
           <div>
             <Label>Itinerary</Label>
             <ItineraryManager
-              itinerary={itineraryData}
+              itinerary={selectedPlace.itinerary_days || []}
               onAddDay={handleEditAddItineraryDay}
               onRemoveDay={handleEditRemoveItineraryDay}
               onChangeDayField={handleEditChangeItineraryDayField}
@@ -693,142 +811,6 @@ function EditModal({
     </div>
   );
 }
-
-// Add this new component above AddPlace
-const ItineraryManager = ({
-  itinerary,
-  onAddDay,
-  onRemoveDay,
-  onChangeDayField,
-  onAddPhoto,
-  onRemovePhoto,
-  onPhotoChange,
-  onDeletePhoto,
-}) => (
-  <div>
-    {itinerary.map((day, idx) => (
-      <div key={idx} className="border rounded-md p-4 mb-4">
-        <div className="flex items-center mb-2">
-          <Label className="mr-2">Day</Label>
-          <Input
-            type="number"
-            min={1}
-            value={day.day}
-            onChange={(e) => onChangeDayField(idx, "day", e.target.value)}
-            className="w-20 mr-4"
-            placeholder="Day"
-          />
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onRemoveDay(idx)}
-            className="ml-2 text-red-500"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="mb-2 flex items-center">
-          <Label className="mr-2">Sub Iterative Description</Label>
-          <Input
-            type="text"
-            value={day.sub_iterative_description || ""}
-            onChange={(e) =>
-              onChangeDayField(idx, "sub_iterative_description", e.target.value)
-            }
-            className="flex-1"
-            placeholder="Sub Iterative Description"
-          />
-        </div>
-        <div className="mb-2">
-          <Label>Sub Description</Label>
-          <Textarea
-            value={day.sub_description}
-            onChange={(e) =>
-              onChangeDayField(idx, "sub_description", e.target.value)
-            }
-            rows={2}
-          />
-        </div>
-        <div>
-          <Label>Photos</Label>
-          <div>
-            {day.photos.map((photo, pIdx) => (
-              <div key={pIdx} className="flex items-center mb-2">
-                {photo && (
-                  <div className="w-12 h-12 mr-2 border rounded overflow-hidden">
-                    <img
-                      src={
-                        photo instanceof File
-                          ? URL.createObjectURL(photo)
-                          : photo?.url
-                          ? getImageUrl(photo)
-                          : "/placeholder.svg?height=48&width=48"
-                      }
-                      alt={`Itinerary Photo ${pIdx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <Input
-                  type="file"
-                  onChange={(e) =>
-                    e.target.files?.[0] &&
-                    onPhotoChange(idx, pIdx, e.target.files[0])
-                  }
-                  className="flex-1"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => {
-                    if (photo?.id) {
-                      // If photo has an ID, it's an existing photo in the database
-                      onDeletePhoto(day.id, photo.id);
-                    } else {
-                      // If no ID, it's a new photo that hasn't been saved yet
-                      onRemovePhoto(idx, pIdx);
-                    }
-                  }}
-                  className="ml-2 text-red-500"
-                  disabled={day.photos.length <= 1}
-                  title={
-                    day.photos.length <= 1
-                      ? "At least one photo required"
-                      : "Remove"
-                  }
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onAddPhoto(idx)}
-              className="mt-2"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Photo
-            </Button>
-          </div>
-        </div>
-      </div>
-    ))}
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={onAddDay}
-      className="mt-2"
-    >
-      <Plus className="h-4 w-4 mr-2" />
-      Add Itinerary Day
-    </Button>
-  </div>
-);
-
-// itinerative end
 
 // Main Component
 function AddPlace() {
@@ -1012,6 +994,9 @@ function AddPlace() {
       formData.append("about_place", selectedPlace.about_place);
       formData.append("place_type", selectedPlace.place_type);
       formData.append("price_title", selectedPlace.price_title);
+      formData.append("tour_highlights", JSON.stringify(selectedPlace.highlights));
+      formData.append("include", JSON.stringify(selectedPlace.includeText));
+      formData.append("exclude", JSON.stringify(selectedPlace.excludeText));
 
       // Handle main image
       if (selectedPlace.main_image && selectedPlace.main_image.file) {
@@ -1028,17 +1013,19 @@ function AddPlace() {
       }
 
       // Handle itinerary data
-      const itineraryData = selectedPlace.itinerary_days.map((day) => ({
-        id: day.id,
-        day: day.day,
-        sub_iterative_description: day.sub_iterative_description,
-        sub_description: day.sub_description,
-      }));
+      const itineraryData = Array.isArray(selectedPlace.itinerary_days)
+        ? selectedPlace.itinerary_days.map((day) => ({
+            id: day.id || null,
+            day: day.day,
+            sub_iterative_description: day.sub_iterative_description,
+            sub_description: day.sub_description,
+          }))
+        : [];
       formData.append("itinerary", JSON.stringify(itineraryData));
 
-      // Handle itinerary photos
+      // Handle itinerary photos (new uploads only)
       selectedPlace.itinerary_days.forEach((day) => {
-        (day.photos || []).forEach((photo, pIdx) => {
+        (Array.isArray(day.photos) ? day.photos : []).forEach((photo, pIdx) => {
           if (photo && photo.file) {
             formData.append(
               "itinerary_photos",
@@ -1048,6 +1035,14 @@ function AddPlace() {
           }
         });
       });
+
+      // Handle photos to delete
+      if (selectedPlace.itinerary_photos_to_delete?.length > 0) {
+        formData.append(
+          "itinerary_photos_to_delete",
+          JSON.stringify(selectedPlace.itinerary_photos_to_delete)
+        );
+      }
 
       await axios.put(
         `${BackendUrl}/api/places/${selectedPlace.id}/update/`,
@@ -1060,6 +1055,9 @@ function AddPlace() {
     } catch (err) {
       setError(err.message);
       console.error("Error details:", err.response?.data);
+      alert(
+        "Failed to update place: " + (err.response?.data?.detail || err.message)
+      );
     } finally {
       setLoading(false);
     }
@@ -1180,8 +1178,8 @@ function AddPlace() {
         ...(prev.itinerary || []),
         {
           day: (prev.itinerary?.length || 0) + 1,
-          title: "",
-          description: "",
+          sub_iterative_description: "",
+          sub_description: "",
           photos: [null],
         },
       ],
@@ -1252,7 +1250,7 @@ function AddPlace() {
           day: (prev.itinerary_days?.length || 0) + 1,
           sub_iterative_description: "",
           sub_description: "",
-          photos: [],
+          photos: [null],
         },
       ],
     }));
@@ -1296,9 +1294,9 @@ function AddPlace() {
     }));
 
   const handleEditChangeItineraryPhoto = (idx, pIdx, file) =>
-    setSelectedPlace((prev) => ({
-      ...prev,
-      itinerary_days: prev.itinerary_days.map((d, i) =>
+    setSelectedPlace((prev) => {
+      const oldPhoto = prev.itinerary_days[idx].photos[pIdx];
+      const updatedItineraryDays = prev.itinerary_days.map((d, i) =>
         i === idx
           ? {
               ...d,
@@ -1309,21 +1307,39 @@ function AddPlace() {
               ),
             }
           : d
-      ),
-    }));
-
-  // Add this new function to handle photo deletion
-  const handleDeleteItineraryPhoto = async (dayId, photoId) => {
-    try {
-      await axios.delete(
-        `${BackendUrl}/api/places/itinerary-photo/${photoId}/delete/`
       );
-      // Refresh the place data after deletion
-      fetchPlaces();
-    } catch (err) {
-      console.error("Error deleting photo:", err);
-      setError(err.message);
-    }
+      const toDelete = oldPhoto && oldPhoto.id
+        ? [...(prev.itinerary_photos_to_delete || []), oldPhoto.id]
+        : prev.itinerary_photos_to_delete || [];
+      return {
+        ...prev,
+        itinerary_days: updatedItineraryDays,
+        itinerary_photos_to_delete: toDelete,
+      };
+    });
+
+  // Stage itinerary photo for deletion on save
+  const handleDeleteItineraryPhoto = (dayId, photoId) => {
+    setSelectedPlace((prev) => {
+      if (!prev) return prev;
+
+      const updatedDeleteList = [
+        ...(prev.itinerary_photos_to_delete || []),
+        photoId,
+      ];
+
+      const updatedItineraryDays = prev.itinerary_days.map((day) =>
+        day.id === dayId
+          ? { ...day, photos: day.photos.filter((p) => p.id !== photoId) }
+          : day
+      );
+
+      return {
+        ...prev,
+        itinerary_days: updatedItineraryDays,
+        itinerary_photos_to_delete: updatedDeleteList,
+      };
+    });
   };
 
   const ViewModal = () =>
@@ -1337,19 +1353,35 @@ function AddPlace() {
               variant="outline"
               size="sm"
               onClick={() => {
-                setShowView(false);
                 setSelectedPlace((prev) => ({
                   ...prev,
+                  // Ensure sub_images are correctly formatted
                   sub_images: Array.isArray(prev.sub_images)
-                    ? prev.sub_images.map((imgObj) =>
-                        imgObj && imgObj.url
-                          ? imgObj
-                          : imgObj && imgObj.image
-                          ? { url: imgObj.image }
-                          : null
-                      )
+                    ? prev.sub_images
+                        .map((imgObj) => {
+                          if (imgObj && imgObj.url) return imgObj; // Already has url (from View button)
+                          if (imgObj && imgObj.image) return { id: imgObj.id, url: imgObj.image }; // From backend
+                          return null; // Fallback for invalid images
+                        })
+                        .filter((img) => img !== null) // Remove null entries
+                    : [],
+                  // Ensure itinerary_days and their photos are preserved
+                  itinerary_days: Array.isArray(prev.itinerary_days)
+                    ? prev.itinerary_days.map((day) => ({
+                        ...day,
+                        photos: Array.isArray(day.photos)
+                          ? day.photos
+                              .map((photo) => {
+                                if (photo && photo.url) return photo; // Already formatted (e.g., { id, url })
+                                if (photo && photo.image) return { id: photo.id, url: photo.image }; // From backend
+                                return null; // Fallback for invalid photos
+                              })
+                              .filter((photo) => photo !== null) // Remove null entries
+                          : [],
+                      }))
                     : [],
                 }));
+                setShowView(false);
                 setShowEdit(true);
               }}
             >
@@ -1416,7 +1448,6 @@ function AddPlace() {
                 rows={3}
               />
             </div>
-
             <div>
               <Label>Price</Label>
               <Input
@@ -1484,7 +1515,6 @@ function AddPlace() {
           <PlaceFormSection title="Features">
             <div>
               <Label>Highlights</Label>
-              {/* Show highlights as a comma-separated string if all are empty */}
               {Array.isArray(selectedPlace.highlights) &&
               selectedPlace.highlights.length > 0 &&
               selectedPlace.highlights.some((h) => h && h.trim()) ? (
@@ -1497,8 +1527,7 @@ function AddPlace() {
                     ) : null
                   )}
                 </div>
-              ) : // Show the raw value if it's a string (backend bug fallback)
-              typeof selectedPlace.highlights === "string" &&
+              ) : typeof selectedPlace.highlights === "string" &&
                 selectedPlace.highlights.trim() !== "" ? (
                 <div className="space-y-2 mt-1">
                   <div className="border rounded-md p-2">
@@ -1572,7 +1601,7 @@ function AddPlace() {
             <div>
               <Label>Itinerary</Label>
               <ItineraryManager
-                itinerary={selectedPlace.itinerary}
+                itinerary={selectedPlace.itinerary_days}
                 onAddDay={handleEditAddItineraryDay}
                 onRemoveDay={handleEditRemoveItineraryDay}
                 onChangeDayField={handleEditChangeItineraryDayField}
@@ -1615,7 +1644,7 @@ function AddPlace() {
                         day.photos.map((photo, pIdx) => (
                           <div key={pIdx} className="border rounded-md p-2">
                             <img
-                              src={getImageUrl(photo.image)}
+                              src={getImageUrl(photo.image || photo.url)}
                               alt={`Day ${day.day} Photo ${pIdx + 1}`}
                               className="w-full h-32 object-cover rounded"
                             />
@@ -1652,7 +1681,6 @@ function AddPlace() {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Add Place</h1>
-      {/* Search + Add Button */}
       <div className="flex justify-between items-center mb-4">
         <div className="relative">
           <Input
@@ -1686,13 +1714,11 @@ function AddPlace() {
           Add Place
         </Button>
       </div>
-      {/* Place Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full table-auto mt-6">
           <thead className="bg-gray-100">
             <tr>
               <th className="px-4 py-2 text-left">Company</th>
-              {/* <th className="px-4 py-2 text-left">City</th> */}
               <th className="px-4 py-2 text-left">Type</th>
               <th className="px-4 py-2 text-left">Price</th>
               <th className="px-4 py-2 text-center">Actions</th>
@@ -1702,7 +1728,6 @@ function AddPlace() {
             {filteredPlaces.map((place) => (
               <tr key={place.id} className="border-b hover:bg-gray-50">
                 <td className="px-4 py-2">{place.title}</td>
-                {/* <td className="px-4 py-2">{place.subtitle}</td> */}
                 <td className="px-4 py-2">{place.place_type}</td>
                 <td className="px-4 py-2">{place.price}</td>
                 <td className="px-4 py-2 flex justify-center space-x-2">
@@ -1716,13 +1741,14 @@ function AddPlace() {
                           ? { url: place.main_image }
                           : null,
                         sub_images: Array.isArray(place.sub_images)
-                          ? place.sub_images.map((imgObj) =>
-                              imgObj && imgObj.image
-                                ? { url: imgObj.image }
-                                : null
-                            )
+                          ? place.sub_images
+                              .map((imgObj) =>
+                                imgObj && imgObj.image
+                                  ? { id: imgObj.id, url: imgObj.image }
+                                  : null
+                              )
+                              .filter((img) => img !== null) // Remove null entries
                           : [],
-                        // Parse the JSON strings if they exist
                         highlights: place.tour_highlights
                           ? typeof place.tour_highlights === "string"
                             ? JSON.parse(place.tour_highlights)
@@ -1738,17 +1764,17 @@ function AddPlace() {
                             ? JSON.parse(place.exclude)
                             : place.exclude
                           : [],
-                        itinerary: Array.isArray(place.itinerary)
-                          ? place.itinerary.map((day) => ({
-                              day: day.day,
-                              title: day.title,
-                              description: day.description,
+                        itinerary_days: Array.isArray(place.itinerary_days)
+                          ? place.itinerary_days.map((day) => ({
+                              ...day,
                               photos: Array.isArray(day.photos)
-                                ? day.photos.map((photo) =>
-                                    photo && photo.image
-                                      ? { url: photo.image }
-                                      : null
-                                  )
+                                ? day.photos
+                                    .map((photo) =>
+                                      photo && photo.image
+                                        ? { id: photo.id, url: photo.image }
+                                        : null
+                                    )
+                                    .filter((photo) => photo !== null) // Remove null entries
                                 : [],
                             }))
                           : [],
@@ -1765,7 +1791,6 @@ function AddPlace() {
           </tbody>
         </table>
       </div>
-      {/* Modals as Divs */}
       <AddModal
         show={showAdd}
         newPlace={newPlace}
@@ -1815,22 +1840,3 @@ function AddPlace() {
 }
 
 export default AddPlace;
-
-// **How to fix:**
-// 1. In your Django model for the Place or sub_images, the file/image field has a max_length (default is 100).
-// 2. The filename you are uploading is too long for this field.
-// 3. Solution: In your Django model, set max_length=255 (or higher) for the ImageField/FileField for sub_images and main_image.
-
-// Example Django model fix:
-//
-// class Place(models.Model):
-//     # ...existing fields...
-//     main_image = models.ImageField(upload_to='places/main_images/', max_length=255, blank=True, null=True)
-//     sub_images = models.ImageField(upload_to='places/sub_images/', max_length=255, blank=True, null=True)
-//     # or if using a related model for sub_images, set max_length=255 there too.
-//
-// After changing the model, run:
-//   python manage.py makemigrations
-//   python manage.py migrate
-
-// This will resolve the 400/500 error when uploading images with long filenames.

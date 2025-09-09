@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from "react";
-import ProjectStatic from "../components/ProjectStatic";
-import RecentOrder from '../components/RecentOrder'
-import KeyMetrics from '../components/KeyMetrics'
-import NewUser from '../components/NewUser'
+import AddPlace from "./AddPlace";
 import { BackendUrl } from "../BackendUrl"; // adjust path if needed
 
 
@@ -28,14 +25,10 @@ const Home = (props) => {
 
   return (
     <div className="p-5 mt-5"> {/* 👈 Added margin-top here */}
-      <div className="grid md:grid-cols-2 xl:grid-cols-2 gap-4">
-        <div className="h-full"><ProjectStatic totalAmount={totalApprovedAmount} /></div>
-        <div className="h-full"><KeyMetrics /></div>
-      </div>
-      <div className="h-full mt-4"> {/* 👈 Optional: add spacing before RecentOrder */}
-        <RecentOrder />
-        <NewUser />
-      </div>
+        <div>
+          <AddPlace />
+        </div>
+
     </div>
   )
 }

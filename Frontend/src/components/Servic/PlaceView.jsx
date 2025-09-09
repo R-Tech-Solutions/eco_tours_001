@@ -196,13 +196,15 @@ const PlaceView = () => {
         return res.json();
       })
       .then((data) => {
-        // Map backend fields to frontend model
+        // --- FIX: Always preserve all itinerary_days, even if photos is missing after edit ---
+        // If photos is missing, null, or not an array, fallback to empty array.
+        // If itinerary_days is missing, fallback to empty array.
         const mapped = {
           id: data.id,
           subtitle: data.title,
           place_history: data.subtitle,
           main_image: data.main_image,
-          sub_images: data.sub_images || [],
+          sub_images: Array.isArray(data.sub_images) ? data.sub_images : [],
           included: data.include,
           exclude: data.exclude,
           tour_highlights: data.tour_highlights,
@@ -210,7 +212,16 @@ const PlaceView = () => {
           price: data.price,
           package_title: data.package_title,
           price_title: data.price_title,
-          itinerary_days: data.itinerary_days || [],
+          itinerary_days: Array.isArray(data.itinerary_days)
+            ? data.itinerary_days.map(day => ({
+                ...day,
+                photos: Array.isArray(day.photos)
+                  ? day.photos
+                  : (day.photos && typeof day.photos === "object" && Object.values(day.photos).length > 0)
+                    ? Object.values(day.photos)
+                    : [],
+              }))
+            : [],
         };
         setPlace(mapped);
         setCurrentImage(data.main_image);

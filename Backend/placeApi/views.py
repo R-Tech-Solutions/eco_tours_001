@@ -2,8 +2,8 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Place, PlaceImage, ItineraryDay, ItineraryPhoto, Booking, Item, Service, GalleryPhoto, Post,Contact,Front, UserDetails
-from .serializers import PlaceSerializer, BookingSerializer, ItemSerializer, ServiceSerializer, GalleryPhotoSerializer, PostSerializer,ContactSerializer,FrontSerializer, UserDetailsSerializer
+from .models import Place, PlaceImage, ItineraryDay, ItineraryPhoto, Booking, Item, Service, GalleryPhoto, Post, Contact, Front, UserDetails
+from .serializers import PlaceSerializer, BookingSerializer, ItemSerializer, ServiceSerializer, GalleryPhotoSerializer, PostSerializer, ContactSerializer, FrontSerializer, UserDetailsSerializer
 import os
 import json
 from django.core.mail import send_mail
@@ -12,7 +12,6 @@ import logging
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -92,8 +91,9 @@ def place_update(request, pk):
         place = Place.objects.get(pk=pk)
     except Place.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
+
     data = request.data
-    serializer = PlaceSerializer(place, data=data, partial=True)
+    serializer = PlaceSerializer(place, data=data, partial=True, context={'request': request})
     if serializer.is_valid():
         # Handle main image
         main_image = request.FILES.get('main_image')
@@ -105,41 +105,87 @@ def place_update(request, pk):
             if place.main_image and place.main_image.path and os.path.isfile(place.main_image.path):
                 os.remove(place.main_image.path)
             place.main_image = None
+
         # Handle sub images
         sub_images = request.FILES.getlist('sub_images')
         if sub_images:
             for img in place.sub_images.all():
+                if img.image and img.image.path and os.path.isfile(img.image.path):
+                    os.remove(img.image.path)
                 img.delete()
             for img in sub_images:
                 PlaceImage.objects.create(place=place, image=img)
         elif data.get('sub_images_clear') == 'true':
             for img in place.sub_images.all():
+                if img.image and img.image.path and os.path.isfile(img.image.path):
+                    os.remove(img.image.path)
                 img.delete()
+
         # Handle itinerary data
         itinerary_data = data.get('itinerary', [])
         if isinstance(itinerary_data, str):
             itinerary_data = json.loads(itinerary_data)
-        # Delete existing itinerary data and photos
-        for day in place.itinerary_days.all():
-            for photo in day.photos.all():
-                if photo.image and photo.image.path and os.path.isfile(photo.image.path):
-                    os.remove(photo.image.path)
-                photo.delete()
-            day.delete()
-        # Create new itinerary data
+
+        # Track which itinerary days to keep, update, or delete
+        existing_days = {day.id: day for day in place.itinerary_days.all()}
+        updated_day_ids = []
+        delete_day_ids = data.get('delete_itinerary_days', [])  # Expect a list of day IDs to delete
+
+        # Process itinerary updates and creations
         for day_data in itinerary_data:
-            day = ItineraryDay.objects.create(
-                place=place,
-                day=day_data.get('day'),
-                sub_iterative_description=day_data.get('sub_iterative_description', ''),
-                sub_description=day_data.get('sub_description', '')
-            )
+            day_id = day_data.get('id')  # Assume client sends ID for existing days
+            day_number = day_data.get('day')
+            sub_iterative_description = day_data.get('sub_iterative_description', '')
+            sub_description = day_data.get('sub_description', '')
+
+            if day_id and day_id in existing_days:
+                # Update existing day
+                day = existing_days[day_id]
+                day.day = day_number
+                day.sub_iterative_description = sub_iterative_description
+                day.sub_description = sub_description
+                day.save()
+                updated_day_ids.append(day_id)
+            else:
+                # Create new day
+                day = ItineraryDay.objects.create(
+                    place=place,
+                    day=day_number,
+                    sub_iterative_description=sub_iterative_description,
+                    sub_description=sub_description
+                )
+
+            # Handle photos for this day
             photos = request.FILES.getlist('itinerary_photos')
             for photo in photos:
-                if photo.name.startswith(f'day{day_data.get("day")}_'):
+                if photo.name.startswith(f'day{day_number}_'):
                     ItineraryPhoto.objects.create(itinerary_day=day, image=photo)
+
+            # Handle photo deletions for this day
+            delete_photo_ids = day_data.get('delete_photos', [])  # Expect a list of photo IDs to delete
+            if delete_photo_ids:
+                for photo_id in delete_photo_ids:
+                    try:
+                        photo = ItineraryPhoto.objects.get(pk=photo_id, itinerary_day=day)
+                        if photo.image and photo.image.path and os.path.isfile(photo.image.path):
+                            os.remove(photo.image.path)
+                        photo.delete()
+                    except ItineraryPhoto.DoesNotExist:
+                        pass  # Ignore if photo doesn't exist
+
+        # Delete itinerary days that were explicitly marked for deletion
+        for day_id in delete_day_ids:
+            if day_id in existing_days:
+                day = existing_days[day_id]
+                for photo in day.photos.all():
+                    if photo.image and photo.image.path and os.path.isfile(photo.image.path):
+                        os.remove(photo.image.path)
+                    photo.delete()
+                day.delete()
+
+        # Save the place with updated fields
         serializer.save()
-        return Response(PlaceSerializer(place).data)
+        return Response(PlaceSerializer(place, context={'request': request}).data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
@@ -204,7 +250,46 @@ def create_booking(request):
                 pass
     serializer = BookingSerializer(data=data)
     if serializer.is_valid():
-        serializer.save()
+        booking = serializer.save()
+        # --- Send admin notification email after booking is created ---
+        try:
+            admin_email = getattr(settings, "ADMIN_EMAIL", None)
+            if admin_email:
+                from django.core.mail import EmailMessage
+                subject = f"New Booking Received: {booking.user_name} ({booking.email})"
+                message = f"""
+A new booking has been made.
+
+User: {booking.user_name}
+Email: {booking.email}
+Phone: {booking.phone}
+Package: {booking.place.title}
+Arrival Date: {booking.arrival_date}
+Adults: {booking.adults}
+Children: {booking.children}
+Total Price: ${booking.price}
+"""
+                email_msg = EmailMessage(
+                    subject,
+                    message,
+                    settings.EMAIL_HOST_USER,
+                    [admin_email],
+                )
+                # Attach main image if available
+                if booking.place.main_image and hasattr(booking.place.main_image, 'path'):
+                    try:
+                        with open(booking.place.main_image.path, 'rb') as img_file:
+                            email_msg.attach(
+                                filename=os.path.basename(booking.place.main_image.path),
+                                content=img_file.read(),
+                                mimetype='image/jpeg'
+                            )
+                    except Exception as e:
+                        logger.warning(f"Could not attach image to admin email: {e}")
+                email_msg.send(fail_silently=True)
+        except Exception as e:
+            logger.warning(f"Failed to send admin notification email: {e}")
+        # --- end admin notification ---
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -237,45 +322,84 @@ def update_booking(request, pk):
         serializer = BookingSerializer(booking, data=data, partial=True)
         if serializer.is_valid():
             # Check if status is being updated to approved
-                subject = 'Your Booking Has Been Approved!'
-                message = f"""
-                Dear {booking.user_name},
+            subject = 'Your Booking Has Been Approved!'
+            message = f"""
+            Dear {booking.user_name},
 
-                We are pleased to inform you that your booking for {booking.place.title} has been approved!
+            We are pleased to inform you that your booking for {booking.place.title} has been approved!
 
-                Booking Details:
-                - Package: {booking.place.package_title}
-                - Arrival Date: {booking.arrival_date}
-                - Number of Adults: {booking.adults}
-                - Number of Children: {booking.children}
-                - Total Price: ${booking.price}
+            Booking Details:
+            - Package: {booking.place.package_title}
+            - Arrival Date: {booking.arrival_date}
+            - Number of Adults: {booking.adults}
+            - Number of Children: {booking.children}
+            - Total Price: ${booking.price}
 
-                We look forward to welcoming you!
+            We look forward to welcoming you!
 
-                Best regards,
-                Your Travel Team
-                """
-                try:
-                    logger.info(f"Attempting to send email to {booking.email}")
-                    if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
-                        raise ValueError("Email settings are not properly configured")
-                    send_mail(
-                        subject,
-                        message,
+            Best regards,
+            Your Travel Team
+            """
+            try:
+                logger.info(f"Attempting to send email to {booking.email}")
+                if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+                    raise ValueError("Email settings are not properly configured")
+                send_mail(
+                    subject,
+                    message,
+                    settings.EMAIL_HOST_USER,
+                    [booking.email],
+                    fail_silently=False,
+                )
+                logger.info(f"Successfully sent email to {booking.email}")
+
+                # --- Send admin notification with image ---
+                admin_email = getattr(settings, "ADMIN_EMAIL", None)
+                if admin_email:
+                    admin_subject = f"Booking Approved: {booking.user_name} ({booking.email})"
+                    admin_message = f"""
+A booking has been approved.
+
+User: {booking.user_name}
+Email: {booking.email}
+Phone: {booking.phone}
+Package: {booking.place.title}
+Arrival Date: {booking.arrival_date}
+Adults: {booking.adults}
+Children: {booking.children}
+Total Price: ${booking.price}
+"""
+                    # Try to attach main image if available
+                    from django.core.mail import EmailMessage
+                    admin_email_msg = EmailMessage(
+                        admin_subject,
+                        admin_message,
                         settings.EMAIL_HOST_USER,
-                        [booking.email],
-                        fail_silently=False,
+                        [admin_email],
                     )
-                    logger.info(f"Successfully sent email to {booking.email}")
-                except Exception as e:
-                    logger.error(f"Failed to send email: {str(e)}")
-                    serializer.save()
-                    return Response({
-                        'message': 'Booking approved but email sending failed',
-                        'error': str(e)
-                    }, status=status.HTTP_200_OK)
+                    # Attach image if exists
+                    if booking.place.main_image and hasattr(booking.place.main_image, 'path'):
+                        try:
+                            with open(booking.place.main_image.path, 'rb') as img_file:
+                                admin_email_msg.attach(
+                                    filename=os.path.basename(booking.place.main_image.path),
+                                    content=img_file.read(),
+                                    mimetype='image/jpeg'
+                                )
+                        except Exception as e:
+                            logger.warning(f"Could not attach image to admin email: {e}")
+                    admin_email_msg.send(fail_silently=True)
+                # --- end admin notification ---
+
+            except Exception as e:
+                logger.error(f"Failed to send email: {str(e)}")
                 serializer.save()
-                return Response(serializer.data)
+                return Response({
+                    'message': 'Booking approved but email sending failed',
+                    'error': str(e)
+                }, status=status.HTTP_200_OK)
+            serializer.save()
+            return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     except Booking.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
@@ -374,7 +498,6 @@ def create_service(request):
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=status.HTTP_201_CREATED)
-    # Add this line to log the errors
     logger.error(f"ServiceSerializer errors: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -411,7 +534,6 @@ def delete_service(request, pk):
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # Gallery CRUD views
-
 @api_view(['GET'])
 def list_gallery_photos(request):
     photos = GalleryPhoto.objects.all().order_by('-uploaded_at')
@@ -494,26 +616,20 @@ def delete_post(request, pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
 
 @api_view(['GET'])
 def list_contacts(request):
-    # Fetch the most recent contact entry
     contact = Contact.objects.last()
     if not contact:
-        # Return a 404 if no contact info has been saved yet
         return Response({'error': 'No contact information found'}, status=status.HTTP_404_NOT_FOUND)
     
-    # Serialize the single contact object
     serializer = ContactSerializer(contact)
     return Response(serializer.data)
 
 @api_view(['POST'])
 def create_contact(request):
-    # Find the first contact object, or create a new one if it doesn't exist
     contact, created = Contact.objects.get_or_create(pk=1)
     
-    # Update the contact object with the new data
     serializer = ContactSerializer(contact, data=request.data, partial=True)
     if serializer.is_valid():
         serializer.save()
@@ -525,34 +641,32 @@ def get_contact(request, pk):
     try:
         contact = Contact.objects.get(pk=pk)
     except Contact.DoesNotExist:
-        return Response({'error':'Contact not found'},status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Contact not found'}, status=status.HTTP_404_NOT_FOUND)
     
     serializer = ContactSerializer(contact)
     return Response(serializer.data)
 
 @api_view(['PUT', 'POST'])
-def update_contact(request,pk):
+def update_contact(request, pk):
     try:
         contact = Contact.objects.get(pk=pk)
     except Contact.DoesNotExist:
-        return Response({'error':'Contact not found'},status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': 'Contact not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    serializer = ContactSerializer(contact,data=request.data, partial=(request.method == 'PATCH '))
+    serializer = ContactSerializer(contact, data=request.data, partial=(request.method == 'PATCH'))
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data)
-    return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
-def delete_contact(request,pk):
+def delete_contact(request, pk):
     try:
         contact = Contact.objects.get(pk=pk)
+        contact.delete()
+        return Response({'message': 'Contact deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
     except Contact.DoesNotExist:
-        return Response({'error':'Contact not found'}, status=status.HTTP_404_NOT_FOUND)
-    
-    contact.delete()
-    return Response({'message':'Contact delete successfully'}, status=status.HTTP_204_NO_CONTENT)
+        return Response({'error': 'Contact not found'}, status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['GET'])
 def get_latest_social_links(request):
@@ -569,8 +683,6 @@ def get_latest_social_links(request):
             "whatsapp_link": "",
             "instagram_link": "",
         })
-
-
 
 # Front CRUD VIEWS
 @api_view(['GET'])
@@ -595,7 +707,7 @@ def create_front(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-def get_front(request,pk):
+def get_front(request, pk):
     try:
         front = Front.objects.get(pk=pk)
         serializer = FrontSerializer(front)
@@ -604,7 +716,7 @@ def get_front(request,pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
 
 @api_view(['PUT', 'POST'])
-def update_front(request,pk):
+def update_front(request, pk):
     try:
         front = Front.objects.get(pk=pk)
     except Front.DoesNotExist:
@@ -636,9 +748,8 @@ def update_front(request,pk):
         logger.error(f"Update Front - Serializer errors: {serializer.errors}")
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['DELETE'])
-def delete_front(request,pk):
+def delete_front(request, pk):
     try:
         front = Front.objects.get(pk=pk)
         # Clean up logo_image file
@@ -654,8 +765,6 @@ def delete_front(request,pk):
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-
 # UserDetails CRUD views
 logger = logging.getLogger(__name__)
 
@@ -667,7 +776,6 @@ def user_list(request):
 
 @api_view(['POST'])
 def create_user(request):
-
     logger.info(f"Request method: {request.method}")
     logger.info(f"Request data: {request.data}")
 
@@ -680,13 +788,11 @@ def create_user(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
-def get_user(request,pk):
-
+def get_user(request, pk):
     try:
         user = UserDetails.objects.get(pk=pk)
         serializer = UserDetailsSerializer(user)
         return Response(serializer.data)
-
     except UserDetails.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
@@ -709,7 +815,7 @@ def user_update(request, pk):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['DELETE'])
-def delete_user(request,pk):
+def delete_user(request, pk):
     try:
         user = UserDetails.objects.get(pk=pk)
         user.delete()
@@ -718,4 +824,3 @@ def delete_user(request,pk):
         return Response(status=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
