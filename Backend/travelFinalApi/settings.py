@@ -24,9 +24,9 @@ SECRET_KEY = 'django-insecure-)*m7l1t+ix&law8e5#f-e!iv%jcc+-+do6!n4l*7bo=ps9z72+
 DEBUG = True
 
 if DEBUG:
-    ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-else:
     ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'echotourslanka.lk,admin.echotourslanka.lk').split(',')
+else:
+    ALLOWED_HOSTS = ['127.0.0.1', 'localhost'] 
 
 # Application definition
 
@@ -79,28 +79,28 @@ WSGI_APPLICATION = 'travelFinalApi.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/  #databases
 
 # Database Configuration
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'eco_tours_db',
-#         'USER': 'postgres',  
-#         'PASSWORD': 'lyc5443KEcoTours54FRQ31',
-#         'HOST': 'eco-tours.csj8qkgam2pb.us-east-1.rds.amazonaws.com',
-#         'PORT': '5432',
-#     }
-# }
-
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'travel_data',
-        'USER': 'postgres',
-        'PASSWORD': '12345678',
-        'HOST': 'localhost',
+        'NAME': 'eco_tours_db',
+        'USER': 'postgres',  
+        'PASSWORD': 'lyc5443KEcoTours54FRQ31',
+        'HOST': 'eco-tours.csj8qkgam2pb.us-east-1.rds.amazonaws.com',
         'PORT': '5432',
     }
 }
+
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'travel_data',
+#         'USER': 'postgres',
+#         'PASSWORD': '12345678',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -145,13 +145,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
-    # "https://admin.echotourslanka.lk",
-    # "https://echotourslanka.lk",
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://localhost:5174",
-    "http://localhost:8000",
-    "http://127.0.0.1:8000",
+    "https://admin.echotourslanka.lk",
+    "https://echotourslanka.lk",
+    # "http://localhost:5173",
+    # "http://127.0.0.1:5173",
+    # "http://localhost:5174",
+    # "http://localhost:8000",
+    # "http://127.0.0.1:8000",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -214,4 +214,4 @@ SECURE_HSTS_PRELOAD = True
 
 APPEND_SLASH = False
 
-ADMIN_EMAIL = 'orawebster231@gmail.com'  # <-- Set your admin email here
+ADMIN_EMAIL = 'rtechsolution.online@gmail.com'  # <-- Set your admin email here
